@@ -1,81 +1,100 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ayuda para María González</title>
+  <meta charset="UTF-8" />
+  <title>Tienda Virtual</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-      color: #333;
-    }
-    .container {
-      max-width: 800px;
-      margin: auto;
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
-    }
-    h1, h2 {
-      color: #c0392b;
-    }
-    .section {
-      margin-bottom: 30px;
-    }
-    .cta {
-      font-size: 1.2em;
-      background: #e74c3c;
-      color: white;
-      padding: 15px;
+    .producto {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 15px;
+      width: 200px;
+      display: inline-block;
+      vertical-align: top;
       text-align: center;
-      border-radius: 8px;
     }
-    img {
-      max-width: 100%;
-      border-radius: 10px;
-      margin-top: 15px;
-    }
-    p {
-      line-height: 1.6;
+    #formulario {
+      display: none;
+      margin-top: 20px;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>
 </head>
 <body>
-  <br>
-  <h1>ALDERETE INFORMÁTICA Y SOPORTE</h1>
-  <BR>
-  <HR SIZE=1><br>
-  <div class="container">
-    <h1>Ayudemos a María González</h1>
+  <h1>Tienda Virtual</h1>
+  <div id="productos"></div>
 
-    <div class="section">
-      <p>María González, de 42 años, fue diagnosticada con una enfermedad poco frecuente que requiere un tratamiento intensivo y costoso. Actualmente se encuentra en lista de espera para una intervención quirúrgica urgente y necesita cubrir gastos médicos, estudios y medicamentos.</p>
-      <img src="maria.jpg" alt="Foto de María González">
-    </div>
+  <form id="formulario">
+    <h3>Complete sus datos</h3>
+    <input type="text" id="nombre" placeholder="Nombre" required><br>
+    <input type="text" id="apellido" placeholder="Apellido" required><br>
+    <input type="tel" id="telefono" placeholder="Teléfono" required><br>
+    <input type="email" id="email" placeholder="Email" required><br>
+    <input type="hidden" id="productoSeleccionado">
+    <input type="hidden" id="cantidadSeleccionada">
+    <button type="submit">Enviar pedido</button>
+  </form>
 
-    <div class="section">
-      <h2>Cómo colaborar</h2>
-      <p><strong>Alias:</strong> ayuda.maria.gon</p>
-      <p><strong>CBU:</strong> 0001234500009876543210</p>
-      <p><strong>Banco:</strong> Banco Provincia</p>
-      <p><strong>MercadoPago:</strong> maria.ayuda@mp.com</p>
-      <p><strong>PayPal:</strong> paypal.me/mariagonzalez</p>
-    </div>
+  <script>
+    const supabase = supabase.createClient(
+      'https://ekukoiiyapnqqumqjkvj.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrdWtvaWl5YXBucXF1bXFqa3ZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4MzIyMTgsImV4cCI6MjA2MDQwODIxOH0.aSKxYzqO1NoeomiiMmF5WW8VPKO6sY0IrEhw4rynaM0'
+    );
 
-    <div class="section">
-      <h2>Contacto</h2>
-      <p><strong>Email:</strong> contacto@mariag.org</p>
-      <p><strong>WhatsApp:</strong> +54 9 11 5555-1234</p>
-      <p><strong>Instagram:</strong> @ayudaparamaria</p>
-    </div>
+    async function cargarProductos() {
+      const { data, error } = await supabase.from('productos').select('*');
+      if (error) return console.error(error);
 
-    <div class="cta">
-      Cada pequeño aporte hace una gran diferencia. ¡Gracias por tu ayuda!
-    </div>
-  </div>
+      const contenedor = document.getElementById('productos');
+      data.forEach(prod => {
+        const div = document.createElement('div');
+        div.className = 'producto';
+        div.innerHTML = `
+          <img src="${prod.imagen}" width="150"><br>
+          <strong>${prod.nombre}</strong><br>
+          $${prod.precio}<br>
+          <input type="number" id="cant-${prod.id}" min="0" value="0" style="width:50px;"><br>
+          <button onclick="comprar(${prod.id}, '${prod.nombre}')">Comprar</button>
+        `;
+        contenedor.appendChild(div);
+      });
+    }
+
+    function comprar(id, nombre) {
+      const cantidad = parseInt(document.getElementById(`cant-${id}`).value);
+      if (cantidad > 0) {
+        document.getElementById('productoSeleccionado').value = nombre;
+        document.getElementById('cantidadSeleccionada').value = cantidad;
+        document.getElementById('formulario').style.display = 'block';
+      } else {
+        alert('Selecciona al menos una unidad');
+      }
+    }
+
+    emailjs.init("6KdW9RIJGFiEJqLsL");
+
+    document.getElementById("formulario").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      emailjs.send("service_r1g2w17", "template_dmpxg2g", {
+        nombre: document.getElementById("nombre").value,
+        apellido: document.getElementById("apellido").value,
+        telefono: document.getElementById("telefono").value,
+        email: document.getElementById("email").value,
+        producto: document.getElementById("productoSeleccionado").value,
+        cantidad: document.getElementById("cantidadSeleccionada").value,
+      }).then(() => {
+        alert("Pedido enviado correctamente");
+        document.getElementById("formulario").reset();
+        document.getElementById("formulario").style.display = "none";
+      }, (error) => {
+        alert("Error al enviar el pedido");
+        console.error(error);
+      });
+    });
+
+    cargarProductos();
+  </script>
 </body>
 </html>
